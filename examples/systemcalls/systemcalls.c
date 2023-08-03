@@ -1,5 +1,11 @@
 #include "systemcalls.h"
 
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+
 /**
  * @param cmd the command to execute with system()
  * @return true if the command in @param cmd was executed
@@ -9,15 +15,7 @@
 */
 bool do_system(const char *cmd)
 {
-
-/*
- * TODO  add your code here
- *  Call the system() function with the command set in the cmd
- *   and return a boolean true if the system() call completed with success
- *   or false() if it returned a failure
-*/
-
-    return true;
+    return (system(cmd) == 0 ? true : false);
 }
 
 /**
@@ -49,15 +47,40 @@ bool do_exec(int count, ...)
     // and may be removed
     command[count] = command[count];
 
-/*
- * TODO:
- *   Execute a system command by calling fork, execv(),
- *   and wait instead of system (see LSP page 161).
- *   Use the command[0] as the full path to the command to execute
- *   (first argument to execv), and use the remaining arguments
- *   as second argument to the execv() command.
- *
-*/
+    // Create a child process
+    fflush(stdout);
+    pid_t pid = fork();
+
+    if (pid == -1) {
+      perror("fork");
+      va_end(args);
+      return false;
+    }
+
+
+    if (pid == 0) {
+        // Child process
+        execv(command[0], command);
+        perror("execv"); // Execv will only return if an error occurs
+        exit(EXIT_FAILURE);
+    } else {
+        // Parent process
+        int status;
+        wait(&status); // Wait for the child process to finish
+
+        va_end(args);
+
+        if (WIFEXITED(status)) {
+            int exit_status = WEXITSTATUS(status);
+            if (exit_status != 0) {
+                fprintf(stderr, "Child process exited with non-zero status: %d\n", exit_status);
+                return false;
+            }
+        } else {
+            fprintf(stderr, "Child process did not terminate normally.\n");
+            return false;
+        }
+    }
 
     va_end(args);
 
@@ -75,6 +98,11 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     va_start(args, count);
     char * command[count+1];
     int i;
+
+    if (outputfile == NULL){
+      return false;
+    }
+
     for(i=0; i<count; i++)
     {
         command[i] = va_arg(args, char *);
@@ -84,6 +112,34 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     // and may be removed
     command[count] = command[count];
 
+    fflush(stdout);
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+        if (dup2(fd, 1) < 0) {perror("dup2"); abort(); }
+        close(fd);
+        execvp(command[0], command);
+        perror("execv");  // Execv will only return if an error occurs
+        exit(EXIT_FAILURE);
+    } else {
+        // Parent process
+        int status;
+        wait(&status);  // Wait for the child process to finish
+
+        va_end(args);
+
+        if (WIFEXITED(status)) {
+            int exit_status = WEXITSTATUS(status);
+            if (exit_status != 0) {
+                fprintf(stderr, "Child process exited with non-zero status: %d\n", exit_status);
+                return false;
+            }
+        } else {
+            fprintf(stderr, "Child process did not terminate normally.\n");
+            return false;
+        }
+    }
 
 /*
  * TODO
