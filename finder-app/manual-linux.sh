@@ -61,7 +61,7 @@ fi
 cd $OUTDIR
 mkdir rootfs
 cd rootfs
-mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr vat
+mkdir -p bin dev etc home lib lib64 proc sbin sys tmp usr var
 mkdir -p usr/bin/ usr/lib usr/sbin
 mkdir -p var/log
 
@@ -74,7 +74,7 @@ git clone git://busybox.net/busybox.git
     
     # TODO:  Configure busybox
     make distclean
-    make menuconfig
+    make defconfig
 else
     cd busybox
 fi
@@ -89,10 +89,11 @@ ${CROSS_COMPILE}readelf -a bin/busybox | grep "program interpreter"
 ${CROSS_COMPILE}readelf -a bin/busybox | grep "Shared library"
 
 # TODO: Add library dependencies to rootfs
-cp /usr/aarch64-linux-gnu/lib/libc.so.6 $OUTDIR/rootfs/lib64/
-cp /usr/aarch64-linux-gnu/lib/libresolv.so.2 $OUTDIR/rootfs/lib64/
-cp /usr/aarch64-linux-gnu/lib/libresolv.so.2 $OUTDIR/rootfs/lib64/
-cp /usr/aarch64-linux-gnu/lib/ld-linux-aarch64.so.1 $OUTDIR/rootfs/lib64/
+export SYSROOT=$(${CROSS_COMPILE}gcc -print-sysroot)
+cp -L $SYSROOT/lib/ld-linux-aarch64.* lib
+cp -L $SYSROOT/lib64/libm.so.* lib64
+cp -L $SYSROOT/lib64/libresolv.so.* lib64
+cp -L $SYSROOT/lib64/libc.so.* lib64
 
 cd $OUTDIR/rootfs
 
@@ -112,12 +113,8 @@ make CROSS_COMPILE=${CROSS_COMPILE}
 
 # TODO: Copy the finder related scripts and executables to the /home directory
 # on the target rootfs
-cp writer $OUTDIR/rootfs/home 
-cp writer.o $OUTDIR/rootfs/home
-cp conf/username.txt $OUTDIR/rootfs/home
-cp finder.sh $OUTDIR/rootfs/home
-cp finder-test.sh $OUTDIR/rootfs/home
-cp autorun-qemu.sh $OUTDIR/rootfs/home
+cp $FINDER_APP_DIR/conf/ -r ${OUTDIR}/rootfs/
+cp -r . ${OUTDIR}/rootfs/home
 
 # TODO: Chown the root directory
 cd ${OUTDIR}/rootfs
