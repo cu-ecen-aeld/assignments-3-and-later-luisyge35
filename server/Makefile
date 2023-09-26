@@ -1,5 +1,5 @@
 CC := gcc
-# CROSS_COMPILE := aarch64-none-linux-gnu-
+CROSS_COMPILE := aarch64-none-linux-gnu-
 TARGET := aesdsocket
 
 ifeq ($(CROSS_COMPILE),aarch64-none-linux-gnu-)
