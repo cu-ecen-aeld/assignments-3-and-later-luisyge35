@@ -81,6 +81,8 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, signalHandler);
   signal(SIGTERM, signalHandler);
 
+  printf("Hello! Running server\n");
+
   openlog("aesdsocket", LOG_PID, LOG_USER);
 
   // Remove the log file at the beginning of the program
@@ -109,6 +111,7 @@ int main(int argc, char *argv[]) {
 
   setsockopt(mySocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
+  printf("Ralizando el bind...\n");
   connection = bind(mySocket, serverInfo->ai_addr, serverInfo->ai_addrlen);
 
   if (connection != 0) {
