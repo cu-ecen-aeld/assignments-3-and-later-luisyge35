@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  if (getaddrinfo(NULL, "9000", &hints, &serverInfo) != 0) {
+  if (getaddrinfo(NULL, "10000", &hints, &serverInfo) != 0) {
     printf("Error getting addr info\n");
     exit(-1);
   }
